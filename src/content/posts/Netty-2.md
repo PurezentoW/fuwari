@@ -43,7 +43,7 @@ lang: ''
 
 ##### 单Reactor单线程
 
-![ ](https://cdn.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261845139.png)
+![ ](https://gcore.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261845139.png)
 
 1、Select是前面I/O复用模型介绍的标准网络编程API，可以实现应用程序通过一个阻塞对象监听多路连接请求；
 
@@ -57,7 +57,7 @@ lang: ''
 
 ##### 单Reactor多线程
 
-![ ](https://cdn.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261846971.png)
+![ ](https://gcore.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261846971.png)
 
 1、Reactor对象通过select监控客户端请求事件，收到事件后，通过dispatch进行分发；
 
@@ -120,7 +120,7 @@ lang: ''
 
 Netty主要基于主从Reactor多线程模型做了一定的改进，其中主从Reactor多线程模型有多个Reactor。
 
-![ ](https://cdn.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261846858.png)
+![ ](https://gcore.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261846858.png)
 
 1、BossGroup线程维护Selector，只关注Accept事件；
 
@@ -314,4 +314,4 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter {
 }
 ```
 
-![recording](https://cdn.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261842455.gif)
+![recording](https://gcore.jsdelivr.net/gh/PurezentoW/PicGo/img/202410261842455.gif)
