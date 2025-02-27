@@ -128,7 +128,7 @@ source=gpu.go:386 msg="no compatible GPUs were discovered"
 
 这里也提一下如何判断显卡激活。打开任务管理器，在提问的时候，看是CPU飙升还是GPU飙升，如果GPU飙升，就是显卡激活了。
 
-![image-20250223213502886](C:\Users\Purezento\AppData\Roaming\Typora\typora-user-images\image-20250223213502886.png)
+![image-20250223213502886](https://cdn.jsdelivr.net/gh/PurezentoW/PicGo/img/202502271058250.png)
 
 ## Dify
 
@@ -161,13 +161,13 @@ git clone https://github.com/langgenius/dify.git --branch 0.15.3
 
    根据你系统上的 Docker Compose 版本，选择合适的命令来启动容器。你可以通过 `$ docker compose version` 命令检查版本，详细说明请参考 [Docker 官方文档](https://docs.docker.com/compose/#compose-v2-and-the-new-docker-compose-command)：
 
-    - 如果版本是 Docker Compose V2，使用以下命令：
+   - 如果版本是 Docker Compose V2，使用以下命令：
 
    ```
    docker compose up -d
    ```
 
-    - 如果版本是 Docker Compose V1，使用以下命令：
+   - 如果版本是 Docker Compose V1，使用以下命令：
 
    ```
    docker-compose up -d
@@ -207,7 +207,7 @@ docker compose ps
 
 添加好模型后，接下来是设置系统模型，刷新网页。点击右上角用户名下的【设置】，选择【模型供应商】，点击右侧的【系统模型设置】
 
-![image-20250225222311940](C:\Users\Purezento\AppData\Roaming\Typora\typora-user-images\image-20250225222311940.png)
+![image-20250225222311940](https://cdn.jsdelivr.net/gh/PurezentoW/PicGo/img/202502271059811.png)
 
 到此，Dify就与前面部署的本地大模型关联起来了。
 
