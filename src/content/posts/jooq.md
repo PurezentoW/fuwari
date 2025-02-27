@@ -3,8 +3,8 @@ title: jooq.md
 published: 2025-01-20
 description: ''
 image: ''
-tags: []
-category: ''
+tags: [ORM,JAVA,JOOQ]
+category: '技术分享'
 draft: false 
 lang: ''
 ---

@@ -52,11 +52,11 @@ export const profileConfig: ProfileConfig = {
   bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   links: [
     {
-      name: 'Twitter',
-      icon: 'fa6-brands:twitter',       // Visit https://icones.js.org/ for icon codes
+      name: 'Wechat',
+      icon: 'ic:baseline-wechat',       // Visit https://icones.js.org/ for icon codes
                                         // You will need to install the corresponding icon set if it's not already included
                                         // `pnpm add @iconify-json/<icon-set-name>`
-      url: 'https://twitter.com',
+      url: 'https://wx.qq.com',
     },
     {
       name: 'Steam',
