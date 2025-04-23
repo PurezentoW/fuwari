@@ -70,7 +70,7 @@ Spring AI MCP 为模型上下文协议提供 Java 和 Spring 框架集成。它�
         </dependency>
 ```
 
-```XML
+```xml
 <!--因为这些包比较新，如果下不到，就要配置这些仓库-->
 <repositories>
     <repository>
