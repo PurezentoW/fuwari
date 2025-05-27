@@ -1,5 +1,5 @@
 ---
-title: iKuai+旁路由OpenWrt
+title: iKuai+OpenWrt 设置ipv6
 published: 2025-03-30
 description: ''
 image: ''

@@ -1,5 +1,5 @@
 ---
-title: jooq.md
+title: jooq ORM框架
 published: 2025-01-20
 description: ''
 image: ''

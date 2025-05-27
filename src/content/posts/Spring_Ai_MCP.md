@@ -1,5 +1,5 @@
 ---
-title: Spring_Ai_MCP.md
+title: Spring Boot AI整合MCP实现数据库查询
 published: 2025-04-23
 description: 'springboot 整合MCP实现数据库查询'
 image: ''
