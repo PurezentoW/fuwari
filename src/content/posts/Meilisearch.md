@@ -738,8 +738,6 @@ input[type="text"]:focus {
 
 ```
 
-
-<video src="https://cdn.wcxian.cc/img/bandicam%202025-05-27%2016-25-07-534.mp4"></video>
 <iframe width="100%" height="468" src="https://cdn.wcxian.cc/img/bandicam%202025-05-27%2016-25-07-534.mp4" title="YouTube video player" frameborder="0" allowfullscreen></iframe>
 
 
