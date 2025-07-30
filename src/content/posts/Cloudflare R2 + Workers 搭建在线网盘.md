@@ -89,7 +89,7 @@ https://pub-*****.r2.dev
 
 ![image-20250725143106417](https://cdn.wcxian.cc/img/20250725232220433.png)
 
-![image-20250725143142794](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250725143142794.png)
+![image-20250725143142794](https://img2.wcxian.cc/img/2025/07/3f6996a3807903f9d38a74dfb3941457.png)
 
 ## 3.创建 Cloudflare Pages 站点
 
