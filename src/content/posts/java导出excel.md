@@ -2,7 +2,7 @@
 title: java导出excel
 published: 2025-06-30
 description: ''
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828153640978.png'
 tags: [java, easyexcel]
 category: '技术分享'
 draft: false 

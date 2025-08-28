@@ -2,7 +2,7 @@
 title: meilisearch的使用
 published: 2025-05-27
 description: 'Meilisearch的安装和使用'
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828154108954.png'
 tags: [meilisearch, Search]
 category: '技术分享'
 draft: false 

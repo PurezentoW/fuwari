@@ -2,7 +2,7 @@
 title: Spring Boot AI整合MCP实现数据库查询
 published: 2025-04-23
 description: 'springboot 整合MCP实现数据库查询'
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828154337417.png'
 tags: [AI, Spring, MCP]
 category: 技术分享
 draft: false 

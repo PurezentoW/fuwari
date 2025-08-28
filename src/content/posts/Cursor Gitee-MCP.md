@@ -2,7 +2,7 @@
 title: Cursor Gitee-MCP来写一个贪吃蛇游戏
 published: 2025-03-27
 description: 'Cursor+Gitee-MCP 是一个基于 Gitee 和 MCP 的开源项目，旨在通过 Gitee 和 MCP 来实现代码托管和项目管理。'
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828154958279.png'
 tags: [AI, Gitee, MCP]
 category: 技术分享
 draft: false 

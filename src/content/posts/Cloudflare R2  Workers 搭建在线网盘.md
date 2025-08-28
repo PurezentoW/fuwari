@@ -1,8 +1,8 @@
 ---
-title: Cloudflare R2 + Workers 搭建在线网盘
+title: Cloudflare R2 Workers 搭建在线网盘
 published: 2025-07-30
 description: ''
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828153336785.png'
 tags: [Cloudflare,Workers]
 category: '技术分享'
 draft: false 

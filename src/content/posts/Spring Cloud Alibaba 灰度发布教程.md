@@ -2,7 +2,7 @@
 title: Spring Cloud Alibaba 灰度发布
 published: 2025-08-27
 description: 'Spring Cloud Alibaba 灰度发布教程'
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828152805295.png'
 tags: [Spring Cloud, Nacos, Gateway]
 category: '技术分享'
 draft: false 

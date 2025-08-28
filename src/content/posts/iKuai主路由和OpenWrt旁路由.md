@@ -2,7 +2,7 @@
 title: iKuai主路由 OpenWrt旁路由 设置ipv6
 published: 2025-03-30
 description: ''
-image: ''
+image: 'https://cdn.wcxian.cc/img/20250828154641398.png'
 tags: [iKuai, OpenWrt]
 category: 网络
 draft: false 
