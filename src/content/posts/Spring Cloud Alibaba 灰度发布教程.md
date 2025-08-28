@@ -4,7 +4,7 @@ published: 2025-08-27
 description: 'Spring Cloud Alibaba 灰度发布教程'
 image: ''
 tags: [Spring Cloud, Nacos, Gateway]
-category: ''
+category: '技术分享'
 draft: false 
 lang: ''
 ---

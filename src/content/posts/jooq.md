@@ -3,7 +3,7 @@ title: jooq ORM框架
 published: 2025-01-20
 description: ''
 image: ''
-tags: [ORM,JAVA,JOOQ]
+tags: [ ORM,JAVA,JOOQ ]
 category: '技术分享'
 draft: false 
 lang: ''

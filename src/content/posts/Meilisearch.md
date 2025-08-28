@@ -4,7 +4,7 @@ published: 2025-05-27
 description: 'Meilisearch的安装和使用'
 image: ''
 tags: [meilisearch, Search]
-category: 技术分享
+category: '技术分享'
 draft: false 
 lang: ''
 ---

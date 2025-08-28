@@ -3,8 +3,8 @@ title: java导出excel
 published: 2025-06-30
 description: ''
 image: ''
-tags: []
-category: ''
+tags: [java, easyexcel]
+category: '技术分享'
 draft: false 
 lang: ''
 ---

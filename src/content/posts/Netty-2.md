@@ -3,8 +3,8 @@ title: Netty-2.md
 published: 2024-10-26
 description: ''
 image: ''
-tags: []
-category: ''
+tags: [Netty]
+category: '技术分享'
 draft: false 
 lang: ''
 ---

@@ -1,5 +1,5 @@
 ---
-title: Dify和DeepSeek的使用
+title: Dify配置DeepSeek
 published: 2025-02-27
 description: 'dify+deepseek'
 image: ''

@@ -4,11 +4,11 @@ published: 2025-07-30
 description: ''
 image: ''
 tags: [Cloudflare,Workers]
-category: '技术分析'
+category: '技术分享'
 draft: false 
 lang: ''
 ---
-# 利用 Cloudflare R2 + Workers 搭建在线网盘
+# 利用 Cloudflare R2 Workers 搭建在线网盘
 
 
 
