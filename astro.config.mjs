@@ -57,6 +57,13 @@ export default defineConfig({
 		}),
 		expressiveCode({
 			themes: [expressiveCodeConfig.theme, expressiveCodeConfig.theme],
+			shiki: {
+				bundledLangs: ['java', 'xml'], // 添加 XML 和 Java 语言支持
+				langAlias: {
+					'JAVA': 'java', // 支持大写别名
+					'XML': 'xml'    // 支持大写别名
+				}
+			},
 			plugins: [
 				pluginCollapsibleSections(),
 				pluginLineNumbers(),
