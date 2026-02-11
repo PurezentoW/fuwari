@@ -2,9 +2,9 @@
 title: Skills 在 Spring Boot 中的应用
 published: 2026-02-11
 description: Anthropic Skills 为 Spring Boot 应用带来了全新的 AI 能力扩展方式。本文详细介绍 Skills 的概念、架构设计、实现方式及实践案例。
-image: https://cdn.wcxian.cc/img/20260211102752855.png
-tags: [Spring Boot, AI, Spring AI, Anthropic, Claude, Skills]
-category: 技术开发
+image: https://cdn.wcxian.cc/img/20260211120452504.png
+tags: [Spring Boot, AI, Skills]
+category: '技术分享'
 draft: false
 lang: zh-CN
 ---
