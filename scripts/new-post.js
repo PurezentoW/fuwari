@@ -45,12 +45,12 @@ if (!fs.existsSync(dirPath)) {
 const content = `---
 title: ${args[0]}
 published: ${getDate()}
-description: ''
-image: ''
+description: ${args[0]}
+image: 'https://cdn.wcxian.cc/img/20260326105308839.png'
 tags: []
-category: ''
+category: '技术分享'
 draft: false 
-lang: ''
+lang: zh-CN
 ---
 `
 
