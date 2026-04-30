@@ -1,5 +1,5 @@
 ---
-title: Cli-Anything
+title: CLI-Anything
 published: 2026-04-24
 description: cli-anything 适配禅道实现cli化
 image: 'https://cdn.wcxian.cc/img/20260424190535379.png'
