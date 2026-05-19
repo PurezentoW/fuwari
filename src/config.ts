@@ -1,4 +1,5 @@
 import type {
+	CommentConfig,
 	ExpressiveCodeConfig,
 	LicenseConfig,
 	NavBarConfig,
@@ -80,6 +81,11 @@ export const licenseConfig: LicenseConfig = {
 	enable: true,
 	name: "CC BY-NC-SA 4.0",
 	url: "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+};
+
+export const commentConfig: CommentConfig = {
+	enable: true,
+	envId: "https://twikoo-opal-gamma.vercel.app", // Vercel 部署地址
 };
 
 export const expressiveCodeConfig: ExpressiveCodeConfig = {

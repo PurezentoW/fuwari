@@ -97,6 +97,12 @@ export type BlogPostData = {
 	nextSlug?: string;
 };
 
+export type CommentConfig = {
+	enable: boolean;
+	envId: string;
+	region?: string;
+};
+
 export type ExpressiveCodeConfig = {
 	theme: string;
 };
