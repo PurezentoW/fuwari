@@ -1,7 +1,7 @@
 ---
 title: 'Grill x Trellis：让 AI 真正干活的团队开发工作流'
 published: 2026-06-29
-description: '把 Matt Pocock 的 grill-me「动工前对齐纪律」与 Trellis 的「工程治理框架」组合，覆盖从需求盘问到稳定产出的完整生命周期，并给出可推广到团队的落地实战。'
+description: 'Grill-me「动工前对齐纪律」与 Trellis 的「工程治理框架」'
 image: 'https://cdn.wcxian.cc/img/20260629205238355.png'
 tags: ['AI Coding', 'Trellis', 'grill-me', 'Claude Code', 'Agent']
 category: '技术分享'

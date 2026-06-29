@@ -1,7 +1,7 @@
 ---
 title: '从 Harness Engineering 到 Trellis '
 published: 2026-05-27
-description: '探讨 Harness Engineering 理念与 Trellis 框架的完整实战，包括 Spec 系统、Task 工作流、JSONL 上下文注入，以及从项目初始化到完成需求的六阶段全流程。'
+description: '探讨 Harness Engineering 理念与 Trellis 框架'
 image: 'https://cdn.wcxian.cc/img/20260527213209305.png'
 tags: ['AI Coding', 'Trellis', 'Harness Engineering', 'Claude Code']
 category: '技术分享'
