@@ -12,7 +12,7 @@ lang: zh-CN
 
 ## 0. 写在前面
 
-上一篇 [[Harness Engineering到Trellis落地实战]] 里，我聊了 Harness Engineering 的理念和 Trellis 的落地。当时我的结论是：**AI Coding 的能力 = 模型能力 × Harness 质量**。
+上一篇 [Harness Engineering 到 Trellis 落地实战](/posts/harness-engineering到trellis/) 里，我聊了 Harness Engineering 的理念和 Trellis 的落地。当时我的结论是：**AI Coding 的能力 = 模型能力 × Harness 质量**。
 
 但是还有几个场景没有考虑到：
 
@@ -562,6 +562,6 @@ Trellis 官方文档的原话：
 >
 > [Trellis 安装与快速上手 — 官方文档](https://docs.trytrellis.app/zh/start/install-and-first-task)
 >
-> [Harness Engineering 到 Trellis 落地实战（本系列上一篇文章）](Harness%20Engineering到Trellis落地实战.md)
+> [Harness Engineering 到 Trellis 落地实战（本系列上一篇文章）](/posts/harness-engineering到trellis/)
 >
 > [The Pragmatic Programmer — David Thomas & Andrew Hunt](https://www.amazon.co.uk/Pragmatic-Programmer-Anniversary-Journey-Mastery/dp/B0833F1T3V)

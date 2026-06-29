@@ -12,7 +12,7 @@ lang: zh-CN
 
 ## 0. 写在前面
 
-过去一年，AI 编程工具的发展速度远超预期。从 [[Claude Code]] 到 [[Claude Code Agent Teams多智能体协作实战|Agent Teams]]，从 [[Skills 在 Spring Boot 中的应用|Skills]] 到 MCP，工具能力在快速膨胀。
+过去一年，AI 编程工具的发展速度远超预期。从 [Claude Code](/posts/claude_code/) 到 [Agent Teams](/posts/claude-agent-teams/)，从 [Skills](/posts/skills-in-spring-boot/) 到 MCP，工具能力在快速膨胀。
 
 但一个尴尬的现实是：**工具越强，乱象越多。**
 

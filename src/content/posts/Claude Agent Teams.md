@@ -12,7 +12,7 @@ lang: zh-CN
 
 ## 0. 写在前面
 
-在上一篇 [[Claude Code]] 里，我更多是把 Claude Code 当成一个“终端里的全栈 AI 工程师”来用。
+在上一篇 [Claude Code](/posts/claude_code/) 里，我更多是把 Claude Code 当成一个“终端里的全栈 AI 工程师”来用。
 
 但当任务开始变复杂之后，单会话模式很快会遇到几个典型问题：
 
