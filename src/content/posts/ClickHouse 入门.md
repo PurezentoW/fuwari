@@ -2,8 +2,8 @@
 title: 'ClickHouse 入门'
 published: 2026-07-28
 description: '面向 OLAP 场景的开源列式数据库：ClickHouse'
-image: 'https://cdn.wcxian.cc/img/20260728150959898.png'
-tags: ['ClickHouse', 'OLAP', '数据库', '数据分析', 'MySQL']
+image: 'https://cdn.wcxian.cc/img/20260728162339359.png'
+tags: ['ClickHouse', 'OLAP', '数据库']
 category: '技术分享'
 draft: false
 lang: zh-CN

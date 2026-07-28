@@ -1,9 +1,9 @@
 ---
-title: 'Grill x Trellis：让 AI 真正干活的团队开发工作流'
+title: 'Grill x Trellis'
 published: 2026-06-29
 description: 'Grill-me「动工前对齐纪律」与 Trellis 的「工程治理框架」'
 image: 'https://cdn.wcxian.cc/img/20260629205238355.png'
-tags: ['AI Coding', 'Trellis', 'grill-me', 'Claude Code', 'Agent']
+tags: ['AI Coding', 'Trellis', 'grill-me']
 category: '技术分享'
 draft: false
 lang: zh-CN

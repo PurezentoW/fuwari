@@ -3,7 +3,7 @@ title: '从 Harness Engineering 到 Trellis '
 published: 2026-05-27
 description: '探讨 Harness Engineering 理念与 Trellis 框架'
 image: 'https://cdn.wcxian.cc/img/20260527213209305.png'
-tags: ['AI Coding', 'Trellis', 'Harness Engineering', 'Claude Code']
+tags: ['AI Coding', 'Trellis', 'Harness Engineering']
 category: '技术分享'
 draft: false
 lang: zh-CN
