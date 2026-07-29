@@ -12,6 +12,10 @@ lang: zh-CN
 
 ---
 
+# ClickHouse 入门
+
+---
+
 ## 0. 写在前面
 
 在无人值守商店 SaaS 中,MySQL 很适合处理订单创建、库存扣减、门店配置、设备绑定这类**单条或少量数据的事务操作**;但当我们要分析「最近 30 天每个租户、门店的进店人数、支付转化率、Top 商品、设备故障率」时,往往需要扫描几千万甚至上亿行明细事件。
@@ -29,7 +33,7 @@ lang: zh-CN
 
 本文以无人值守商店 SaaS 为主线,介绍 ClickHouse 的核心原理、安装方式、表设计、常用 SQL、与 MySQL 的差异、Spring Boot 集成以及选型建议。读完后,读者应能把"门店经营异常、设备故障、支付转化下降"落到可查询的数据和可执行的处理动作上。
 
-> Kafka 实时接入、物化视图预聚合、跳数索引/Projection 调优、分布式集群、运维监控等进阶内容,已单独整理到《ClickHouse 进阶实战》,新手先把本文读透即可。
+> Kafka 实时接入、物化视图预聚合、跳数索引/Projection 调优、分布式集群、运维监控等进阶内容,已单独整理到《[ClickHouse 进阶实战](./ClickHouse进阶实战.md)》,新手先把本文读透即可。
 
 ---
 
@@ -42,14 +46,14 @@ lang: zh-CN
 - **OLTP(Online Transaction Processing)联机事务处理**:关注一笔数据是否准确地写入或修改,例如创建订单、支付确认、库存扣减、门店设备配置。
 - **OLAP(Online Analytical Processing)联机分析处理**:关注从大量历史数据中快速统计规律,例如门店经营报表、进店到支付的转化分析、设备健康度和监控指标大盘。
 
-| 对比项  | OLTP:MySQL / PostgreSQL | OLAP:ClickHouse  |
-| ---- | ----------------------- | ---------------- |
-| 典型操作 | 单条查询、插入、更新、删除           | 多维筛选、分组、聚合、TopN  |
-| 数据规模 | 万~千万级单表较常见              | 亿~万亿级明细数据        |
-| 查询返回 | 少量记录                    | 聚合结果、报表、明细钻取     |
-| 事务能力 | 强,支持行级事务                | 不以高频事务更新为目标      |
-| 存储方式 | 通常是行式存储                 | 列式存储             |
-| 典型场景 | 订单、账户、商品、库存             | 日志、埋点、指标、画像、风控分析 |
+| 对比项   | OLTP:MySQL / PostgreSQL    | OLAP:ClickHouse                  |
+| -------- | -------------------------- | -------------------------------- |
+| 典型操作 | 单条查询、插入、更新、删除 | 多维筛选、分组、聚合、TopN       |
+| 数据规模 | 万~千万级单表较常见        | 亿~万亿级明细数据                |
+| 查询返回 | 少量记录                   | 聚合结果、报表、明细钻取         |
+| 事务能力 | 强,支持行级事务            | 不以高频事务更新为目标           |
+| 存储方式 | 通常是行式存储             | 列式存储                         |
+| 典型场景 | 订单、账户、商品、库存     | 日志、埋点、指标、画像、风控分析 |
 
 举一个无人店顾客与设备事件的例子:
 
@@ -94,23 +98,7 @@ ClickHouse 很快,但不是「可以替代所有数据库」的万能工具。
 
 推荐的架构不是「用 ClickHouse 替换 MySQL」,而是:
 
-```text
-                    ┌───────────────┐
-                    │ MySQL / PG     │  订单、库存、租户和门店等事务数据
-                    │ (业务主库)     │
-                    └───────┬───────┘
-                            │ CDC / 定时同步
-                            ▼
-┌──────────┐      ┌──────────────────┐      ┌──────────────────┐
-│ 门店/设备/服务│ ─► │ Kafka / Flink     │ ───► │ ClickHouse        │
-│ 事件与日志    │    │ 清洗、关联、聚合  │      │ 明细 + 实时分析   │
-└──────────┘      └──────────────────┘      └─────────┬────────┘
-                                                        │
-                                                        ▼
-                                               ┌──────────────────┐
-                                               │ BI 报表 / 数据大盘 │
-                                               └──────────────────┘
-```
+![ce501fb2-b954-47b2-a9a8-8002f82bd3f3](https://cdn.wcxian.cc/img/20260726141047848.png)
 
 ### 1.4 三个可以直接落地的业务案例
 
@@ -128,16 +116,14 @@ ClickHouse 很快,但不是「可以替代所有数据库」的万能工具。
 
 **运营大盘会看什么**:
 
-| 维度 | 指标 | 能发现什么 |
-| --- | --- | --- |
-| 租户 / 门店 | 进店人数、支付人数、GMV、退款数 | 哪家门店客流正常但不成交 |
-| 商品 | 浏览/拿取 → 支付转化率 | 缺货、定价、商品识别或陈列是否影响成交 |
-| 城市 / 设备型号 / 软件版本 | 支付成功率、设备错误数、接口耗时 | 某批设备、网络或新版本是否异常 |
-| 小时 | 每 5 分钟进店数、订单数、GMV、退款数 | 活动是否达到预期,以及异常何时开始 |
+| 维度                       | 指标                                 | 能发现什么                             |
+| -------------------------- | ------------------------------------ | -------------------------------------- |
+| 租户 / 门店                | 进店人数、支付人数、GMV、退款数      | 哪家门店客流正常但不成交               |
+| 商品                       | 浏览/拿取 → 支付转化率               | 缺货、定价、商品识别或陈列是否影响成交 |
+| 城市 / 设备型号 / 软件版本 | 支付成功率、设备错误数、接口耗时     | 某批设备、网络或新版本是否异常         |
+| 小时                       | 每 5 分钟进店数、订单数、GMV、退款数 | 活动是否达到预期,以及异常何时开始      |
 
 **一次真实的使用动作(示例)**:10:30 后,大盘显示某商圈门店的进店人数正常,但"进店 → 支付成功"转化率只有同类门店的三分之一。运营按 `store_id`、`device_id`、`product_id` 和支付通道下钻,发现一批收银设备升级后频繁报支付超时。于是先将设备切回稳定版本、引导顾客使用备用支付通道;研发同时用同一份事件数据确认修复后转化率是否恢复。这里 ClickHouse 的价值不只是出报表,而是让业务能在损失扩大的过程中定位和验证问题。
-
-本文第 4 节的 `store_events` 表,以及第 6 节的进店/支付统计、商品 TopN 和漏斗 SQL,正是为这一类问题准备的。
 
 #### 案例二:结算变慢时,从「顾客投诉」到「定位范围」
 
@@ -152,7 +138,17 @@ ClickHouse 很快,但不是「可以替代所有数据库」的万能工具。
 3. 继续过滤错误码和下游服务,定位到支付网关连接池耗尽;
 4. 回滚发布或扩容后,持续查看 P99 和错误率,确认指标恢复。
 
-这种场景中,ClickHouse 适合保留高吞吐的原始日志,并支持按任意时间段、接口、版本和错误码进行聚合与下钻。第 6.5 节的分位数查询就对应这类"平均值看不出问题"的线上排障需求。
+这种场景中,ClickHouse 适合保留高吞吐的原始日志,并支持按任意时间段、接口、版本和错误码进行聚合与下钻。
+
+> - **P50（中位数）**：把所有的请求耗时从快到慢排序，排在最中间的那个值。
+    >   - **含义**：表示 **50%** 的请求耗时低于这个数值。
+>   - **场景**：代表“大多数正常情况下的速度”。如果 P50 很慢，说明系统整体存在性能瓶颈。
+> - **P95（百分位）**：排在 **95%** 位置的那个值。
+    >   - **含义**：表示 **95%** 的请求耗时低于这个数值，只有 **5%** 的请求比这个慢。
+>   - **场景**：这是支付接口最核心的考核指标之一。它代表“绝大多数用户的体验”，排除了偶发干扰。如果 P95 过高，意味着每 20 个用户中就有 1 个感受到明显卡顿。
+> - **P99（百分位）**：排在 **99%** 位置的那个值。
+    >   - **含义**：表示 **99%** 的请求耗时低于这个数值，只有 **1%** 的请求比这个慢。
+>   - **场景**：代表“最差情况下的长尾延迟”。这通常由网络抖动、GC（垃圾回收）或数据库锁等待引起。在金融支付中，P99 关乎那 1% 用户的支付成功率与体验。
 
 #### 案例三:无人店 SaaS 的多租户实时经营看板
 
@@ -160,15 +156,15 @@ ClickHouse 很快,但不是「可以替代所有数据库」的万能工具。
 
 **典型做法**:订单创建、支付、退款、门店库存变化及设备健康事件通过 CDC 或消息队列汇入 ClickHouse;写入时把租户、门店、城市、商品类目、设备型号、会员类型等高频分析维度补充到订单宽表中。系统再按小时、租户、门店和类目预聚合,给经营大盘、区域运营和平台运维使用。
 
-| 角色         | 常见问题                  | 对应业务动作           |
-| ---------- | --------------------- | ---------------- |
-| 品牌总部 / 加盟商 | 今日 GMV、进店转化与目标差多少?    | 调整商品、促销和门店经营策略   |
-| 区域运营       | 哪些门店订单下滑、退款异常或客流转化偏低? | 核实库存、设备、网络和活动执行  |
-| 商品运营       | 哪个品类浏览上涨但支付下降、库存不足?   | 调拨库存、补货或调整商品策略   |
-| 平台运维       | 哪批设备、哪个版本的故障率或耗时异常?   | 灰度回滚、远程修复或现场巡检   |
-| 财务         | 支付金额、退款金额和订单数是否对得上?   | 尽早发现数据、订单或支付链路问题 |
+| 角色              | 常见问题                                  | 对应业务动作                     |
+| ----------------- | ----------------------------------------- | -------------------------------- |
+| 品牌总部 / 加盟商 | 今日 GMV、进店转化与目标差多少?           | 调整商品、促销和门店经营策略     |
+| 区域运营          | 哪些门店订单下滑、退款异常或客流转化偏低? | 核实库存、设备、网络和活动执行   |
+| 商品运营          | 哪个品类浏览上涨但支付下降、库存不足?     | 调拨库存、补货或调整商品策略     |
+| 平台运维          | 哪批设备、哪个版本的故障率或耗时异常?     | 灰度回滚、远程修复或现场巡检     |
+| 财务              | 支付金额、退款金额和订单数是否对得上?     | 尽早发现数据、订单或支付链路问题 |
 
-这里的关键不是把 ClickHouse 当订单主库,而是把它作为"面向分析的订单与事件事实层":MySQL 仍负责创建订单、改状态和事务一致性;ClickHouse 负责快速汇总、趋势比较和多维钻取。订单宽表设计和预聚合的具体做法,可参见《ClickHouse 进阶实战》。
+这里的关键不是把 ClickHouse 当订单主库,而是把它作为"面向分析的订单与事件事实层":MySQL 仍负责创建订单、改状态和事务一致性;ClickHouse 负责快速汇总、趋势比较和多维钻取。
 
 **判断一个需求是否值得接入 ClickHouse,可以先问三个问题**:数据是否持续累积、查询是否经常按多个维度做统计、结果是否会直接驱动运营或研发动作?三个答案都接近「是」时,通常就是一个合适的候选场景。
 
@@ -254,8 +250,6 @@ tenant-b, 2026-07-21, 10:15:00   │ 下一个索引粒度
 ### 3.1 Windows 安装
 
 #### 方案一:WSL2 安装(推荐)
-
-Windows 环境推荐使用 WSL2 安装 ClickHouse。WSL2 提供了接近 Linux 的运行环境,不需要额外安装 Docker Desktop,适合本地学习和开发。
 
 ##### 1. 安装 WSL
 
@@ -382,8 +376,6 @@ Query id: b7b11161-96d8-4fea-a791-3d651e5be21e
 2 rows in set. Elapsed: 0.002 sec.
 ```
 
-
-
 > 如果 `curl` 命令不存在,可以先执行 `sudo apt install curl -y`。服务端窗口需要保持运行;关闭该窗口后,ClickHouse 服务也会停止。
 
 ### 3.2 Docker 快速启动
@@ -404,11 +396,11 @@ docker run -d \
 
 端口说明:
 
-| 端口 | 协议 | 用途 |
-| --- | --- | --- |
-| `8123` | HTTP | 浏览器、curl、JDBC HTTP 连接 |
-| `9000` | Native TCP | `clickhouse-client`、部分驱动连接 |
-| `9004` | MySQL 协议(可选) | 兼容 MySQL 客户端连接 |
+| 端口   | 协议             | 用途                              |
+| ------ | ---------------- | --------------------------------- |
+| `8123` | HTTP             | 浏览器、curl、JDBC HTTP 连接      |
+| `9000` | Native TCP       | `clickhouse-client`、部分驱动连接 |
+| `9004` | MySQL 协议(可选) | 兼容 MySQL 客户端连接             |
 
 查看容器状态:
 
@@ -538,13 +530,13 @@ SETTINGS index_granularity = 8192;
 
 这个建表 SQL 中最重要的是 `MergeTree`、`PARTITION BY` 和 `ORDER BY`。
 
-| 配置 | 作用 |
-| --- | --- |
-| `ENGINE = MergeTree` | ClickHouse 最常用的存储引擎,提供分区、排序、稀疏索引和后台合并能力。 |
-| `PARTITION BY toYYYYMM(event_date)` | 按月分区,便于生命周期管理和按月删除历史数据。 |
-| `ORDER BY (...)` | 决定数据在每个 Part 内的物理排序方式,是最重要的性能设计。 |
-| `LowCardinality(String)` | 适合城市、渠道、事件名这类枚举值较少的字符串列,可减少字典和存储开销。 |
-| `MATERIALIZED` | `event_date` 由 `event_time` 自动计算,写入时无需手动传值。 |
+| 配置                                | 作用                                                         |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `ENGINE = MergeTree`                | ClickHouse 最常用的存储引擎,提供分区、排序、稀疏索引和后台合并能力。 |
+| `PARTITION BY toYYYYMM(event_date)` | 按月分区,便于生命周期管理和按月删除历史数据。                |
+| `ORDER BY (...)`                    | 决定数据在每个 Part 内的物理排序方式,是最重要的性能设计。    |
+| `LowCardinality(String)`            | 适合城市、渠道、事件名这类枚举值较少的字符串列,可减少字典和存储开销。 |
+| `MATERIALIZED`                      | `event_date` 由 `event_time` 自动计算,写入时无需手动传值。   |
 
 ### 4.3 为什么这样设计排序键
 
@@ -635,11 +627,11 @@ INSERT 批次 3  ──► Part_3
 
 这三个概念很容易混淆:
 
-| 概念 | 作用 | 是否建议频繁使用 |
-| --- | --- | --- |
-| `PARTITION BY` | 将数据拆分到不同分区,常用于按月、按天管理数据 | 否,分区不宜过细 |
-| `ORDER BY` | 决定分区内数据排序和主索引,是查询性能核心 | 必须仔细设计 |
-| `PRIMARY KEY` | 稀疏主索引的表达式;默认与 `ORDER BY` 相同 | 一般保持默认即可 |
+| 概念           | 作用                                          | 是否建议频繁使用 |
+| -------------- | --------------------------------------------- | ---------------- |
+| `PARTITION BY` | 将数据拆分到不同分区,常用于按月、按天管理数据 | 否,分区不宜过细  |
+| `ORDER BY`     | 决定分区内数据排序和主索引,是查询性能核心     | 必须仔细设计     |
+| `PRIMARY KEY`  | 稀疏主索引的表达式;默认与 `ORDER BY` 相同     | 一般保持默认即可 |
 
 一个常见误区是「按天分区一定更快」。
 
@@ -654,14 +646,14 @@ INSERT 批次 3  ──► Part_3
 
 ### 5.3 最常用的 MergeTree 家族引擎
 
-| 引擎 | 用途 | 说明 |
-| --- | --- | --- |
-| `MergeTree` | 普通明细数据 | 最常用的基础引擎。 |
-| `ReplacingMergeTree` | 最终一致去重 | 相同排序键的数据,后台合并后保留一个版本。 |
-| `AggregatingMergeTree` | 聚合状态存储 | 配合物化视图保存聚合中间状态。 |
-| `Distributed` | 分布式查询入口 | 本身不存数据,将 SQL 路由到多个分片。 |
+| 引擎                   | 用途           | 说明                                      |
+| ---------------------- | -------------- | ----------------------------------------- |
+| `MergeTree`            | 普通明细数据   | 最常用的基础引擎。                        |
+| `ReplacingMergeTree`   | 最终一致去重   | 相同排序键的数据,后台合并后保留一个版本。 |
+| `AggregatingMergeTree` | 聚合状态存储   | 配合物化视图保存聚合中间状态。            |
+| `Distributed`          | 分布式查询入口 | 本身不存数据,将 SQL 路由到多个分片。      |
 
-> 此外还有 `SummingMergeTree`、`CollapsingMergeTree`、`ReplicatedMergeTree` 等引擎,以及预聚合、跳数索引、Projection、分片副本等更深入的用法,见《ClickHouse 进阶实战》。
+> 此外还有 `SummingMergeTree`、`CollapsingMergeTree`、`ReplicatedMergeTree` 等引擎,以及预聚合、跳数索引、Projection、分片副本等更深入的用法,见《[ClickHouse 进阶实战](./ClickHouse进阶实战.md)》。
 
 ### 5.4 ReplacingMergeTree 去重
 
@@ -754,13 +746,13 @@ Query id: df511fb3-bb28-47ef-9e90-573397be0c07
 
 **业务怎么用**:进店人数没有下降、支付转化却下降时,运营不应先归因于客流;应继续按门店、设备、商品和支付通道下钻,判断是库存、识别、结算还是支付链路的问题。
 
-| 函数 | 含义 | 特点 |
-| --- | --- | --- |
-| `count()` / `countIf()` | 统计行数或满足条件的事件数 | 用于进店数、订单数、支付数、设备错误数。 |
-| `uniqExact()` | 精确去重 | 结果精确,但高基数场景内存消耗更高。 |
-| `uniqCombined64()` | 近似去重 | 性能和精度平衡较好,常用于大规模到店会员数。 |
-| `sum()` / `avg()` | 求和 / 平均值 | 常用于交易金额、设备耗时等指标。 |
-| `quantile()` | 分位数 | 常用于 P95、P99 延迟指标。 |
+| 函数                                                         | 含义（本查询中）                                             | 特点                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------------------------- |
+| `countIf(event_name = 'entry_detected')`                     | 统计当天“进店”事件的总发生次数（含同一用户多次进店）         | 条件计数，直接基于原始行，快速聚合                       |
+| `countIf(event_name = 'payment_success')`                    | 统计当天“支付成功”事件的总发生次数                           | 同上，用于计算支付笔数                                   |
+| `uniqCombined64If(member_id, event_name = 'entry_detected')` | 对满足“进店”条件的 `member_id` 进行近似去重计数，得到独立进店用户数（UV） | 近似去重算法，内存效率高，适合高基数场景，精度与性能平衡 |
+| `nullIf(entry_count, 0)`                                     | 若 `entry_count` 为 0 则返回 `NULL`，否则返回原值            | 用于安全除法，避免除零错误，`NULL` 参与除法结果为 `NULL` |
+| `round(..., 4)`                                              | 将转化率四舍五入保留 4 位小数                                | 格式化输出，提高可读性                                   |
 
 ### 6.2 租户 × 门店多维聚合
 
@@ -792,6 +784,13 @@ Query id: 70b7aebb-ad81-45a1-ab5d-3164162faa23
 
 **业务怎么用**:只在少数门店异常时,优先检查当地网络、设备版本、库存和门店活动执行;不要因为局部门店问题直接修改全量商品或支付策略。
 
+| 函数                                      | 含义（本查询中）             | 特点                                                |
+| :---------------------------------------- | :--------------------------- | :-------------------------------------------------- |
+| `countIf(event_name = 'entry_detected')`  | 统计该门店当天的进店事件次数 | 条件计数，按门店分组聚合                            |
+| `countIf(event_name = 'payment_success')` | 统计该门店当天的支付成功次数 | 同上                                                |
+| `nullIf(entry_count, 0)`                  | 避免进店数为 0 时除零        | 返回 `NULL` 使转化率变为 `NULL`，排序时通常置于末尾 |
+| `round(..., 4)`                           | 保留 4 位小数显示转化率      | 便于阅读和比较                                      |
+
 ### 6.3 TopN 商品与购买转化
 
 ```sql
@@ -821,6 +820,14 @@ Query id: 46c915ee-917d-4a11-9fbd-efd84c9e21db
 ```
 
 `countIf` 可以在一次扫描中完成多个条件指标统计,避免为每种事件写一条 SQL。**高浏览/拿取、低支付**的商品,应结合库存、价格、商品识别置信度和结算异常继续排查,而不是仅按销量下架或补货。
+
+| 函数                                      | 含义（本查询中）                | 特点                           |
+| :---------------------------------------- | :------------------------------ | :----------------------------- |
+| `countIf(event_name = 'product_view')`    | 统计该商品的浏览事件次数        | 条件计数，按商品分组           |
+| `countIf(event_name = 'product_taken')`   | 统计该商品的“取走/加购”事件次数 | 同上                           |
+| `countIf(event_name = 'payment_success')` | 统计该商品关联的支付成功次数    | 同上                           |
+| `nullIf(view_count, 0)`                   | 防止浏览量为 0 时除零           | 安全除法，返回 `NULL` 避免报错 |
+| `round(..., 4)`                           | 格式化商品转化率                | 保留 4 位小数                  |
 
 ### 6.4 从进店到支付的漏斗
 
@@ -852,6 +859,13 @@ Query id: eccf1816-edbb-4078-bc66-f705a2f725e1
 1 row in set. Elapsed: 0.004 sec.
 ```
 
+| 函数                                       | 含义（本查询中）                                             | 特点                                         |
+| :----------------------------------------- | :----------------------------------------------------------- | :------------------------------------------- |
+| `countIf(event_name = 'entry_detected')`   | 统计“进店”事件的独立用户数（因子查询已按 `member_id, event_name` 去重，每行代表一个用户-事件组合） | 条件计数作用于去重后的结果集，等价于 UV 统计 |
+| `countIf(event_name = 'product_view')`     | 统计“浏览商品”的独立用户数                                   | 同上                                         |
+| `countIf(event_name = 'checkout_started')` | 统计“开始结算”的独立用户数                                   | 同上                                         |
+| `countIf(event_name = 'payment_success')`  | 统计“支付成功”的独立用户数                                   | 同上                                         |
+
 上面的写法统计的是"当天至少发生过某个行为的会员数"。如果必须严格判断先后顺序,例如"先进店,再开始结算,最后支付",可以使用 ClickHouse 的 `windowFunnel`:
 
 ```sql
@@ -881,6 +895,11 @@ ORDER BY funnel_step;
 
 其中 `3600` 表示会员必须在 1 小时内完成漏斗步骤。**业务怎么用**:每一层对应不同责任边界——进店后无浏览需检查门店体验或货架;开始结算后未支付则优先检查收银设备、支付通道和网络。
 
+| 函数                                                         | 含义（本查询中）                                             | 特点                                                         |
+| :----------------------------------------------------------- | :----------------------------------------------------------- | :----------------------------------------------------------- |
+| `windowFunnel(3600)(event_time, condition1, condition2, condition3)` | 对每个用户在 3600 秒窗口内按顺序判断是否依次完成“进店→开始结算→支付成功”，返回达到的最高步骤数（0~3） | ClickHouse 专用漏斗函数，按时间顺序严格匹配，支持自定义窗口和事件链 |
+| `count()` （外层）                                           | 统计每个漏斗步骤对应的用户数量                               | 对分组结果进行计数，得到各步骤的用户分布                     |
+
 ### 6.5 分位数:设备与支付接口 P95 / P99
 
 ```sql
@@ -900,125 +919,25 @@ ORDER BY event_date, p99_ms DESC;
 
 均值正常但 P99 很高,仍意味着少量顾客会长时间无法完成结算,造成排队和转化损失。高频参与筛选和聚合的字段(如支付通道、设备型号、错误码)最好在写入时拆成独立列;不要长期依赖从 JSON 字符串中实时解析字段。
 
+| 函数                                      | 含义（本查询中）                                             | 特点                                                         |
+| :---------------------------------------- | :----------------------------------------------------------- | :----------------------------------------------------------- |
+| `JSONExtractFloat(properties, 'cost_ms')` | 从 `properties` JSON 字符串中提取 `cost_ms` 字段并转换为浮点数 | 支持 JSON 字段解析，用于获取埋点中的耗时指标                 |
+| `toFloat64(...)`                          | 将提取的值显式转换为 Float64 类型                            | 确保数据类型一致，避免隐式转换问题                           |
+| `quantile(0.50)(value)`                   | 计算指定字段的 50% 分位数（中位数）                          | 精确分位数算法，基于水印（TDigest）近似但精度很高，适合大规模数据 |
+| `quantile(0.95)(value)`                   | 计算 95% 分位数（P95）                                       | 同上，用于发现长尾延迟                                       |
+| `quantile(0.99)(value)`                   | 计算 99% 分位数（P99）                                       | 同上，更关注极端性能情况                                     |
+
 ---
 
 ## 7. MySQL vs ClickHouse 概念对比
 
-前面几章我们看到了 ClickHouse 怎么建表、怎么写 SQL,但作为主要用 MySQL 的开发者,最关心的问题其实是:**它和 MySQL 到底有什么不一样?什么时候该用它、什么时候不该用?**
+![de05d8f9-9373-41eb-a0b1-4f8ea83380b6](https://cdn.wcxian.cc/img/20260726151635340.png)
 
-这一章不写可运行的对照实验,只把两者在**存储、索引、写入、更新、场景**五个维度的根本差异讲清楚。
+### 7.1 适用场景对比表
 
-### 7.1 存储方式:行存 vs 列存
+![5e717cd7-ee8e-4a10-89da-4524752825f9](https://cdn.wcxian.cc/img/20260726144644559.png)
 
-同一张 `store_events` 表,MySQL 和 ClickHouse 在磁盘上的组织方式完全不同。
-
-**MySQL(行式存储)**:一行数据的所有字段紧挨在一起存。
-
-```text
-行存(按行连续保存)
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 行1: [tenant-a, store-hz-001, 10001, door-01, 杭州, entry_detected, ...] │
-│ 行2: [tenant-a, store-hz-001, 10001, shelf-03, 杭州, product_view,   ...] │
-│ 行3: [tenant-a, store-hz-001, 10001, pos-01,   杭州, payment_success,...] │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-**ClickHouse(列式存储)**:同一列的所有值连续保存,不同列分开存。
-
-```text
-列存(按列连续保存)
-tenant_id 列:  tenant-a, tenant-a, tenant-a, ...
-store_id  列:  store-hz-001, store-hz-001, store-hz-001, ...
-event_name列:  entry_detected, product_view, payment_success, ...
-properties列:  {...}, {...}, {...}, ...(大字段,单独一列)
-```
-
-差异带来的结果:第 6.1 节那条 SQL 只用到 `tenant_id`、`event_date`、`event_name`、`member_id` 四列。
-
-- **MySQL** 即使有索引,范围扫描时仍要把整行(包括体积很大的 `properties` 字段)从磁盘读出来,再丢弃不要的列;
-- **ClickHouse** 只读这四列,`properties` 那一列根本不会被碰。
-
-**结论:列越多、单次查询用到的列越少,ClickHouse 的优势越明显。** 这也是为什么 ClickHouse 特别适合「宽表 + 聚合」——宽表的字段动辄几十上百列,但单次分析通常只挑其中几列。
-
-### 7.2 索引与查询:B+树 vs 稀疏索引 + 向量化
-
-**MySQL 的 B+树索引**:为每个索引字段维护一棵 B+树,定位到具体的行。它最擅长的是「按主键或唯一索引精确找一条/少量数据」,点查几乎是常数级。但范围聚合查询(比如「最近 7 天所有门店的进店人数」)即使有索引,也要大量回表扫描,数据量一大就很慢。
-
-**ClickHouse 的稀疏索引 + 向量化**:不为每一行建索引,而是按排序键每隔一段(默认 8192 行)保存一个标记;查询时先用稀疏索引跳过「完全不可能命中」的数据块,再对剩下的列做向量化批量计算。它不擅长「精确找一条」,但非常擅长「快速算一批」。
-
-```text
-MySQL:   "我要找到 id=100001 这条记录"       →  几乎瞬间
-ClickHouse: "我要找到 id=100001 这条记录"     →  不一定快,这不是它的强项
-
-MySQL:   "最近7天每个门店的进店人数"          →  扫大量行,几十秒~分钟级
-ClickHouse: "最近7天每个门店的进店人数"       →  列裁剪+并行,百毫秒级
-```
-
-> 一句话总结:**MySQL 擅长「精确找一条」,ClickHouse 擅长「快速算一批」。**
-
-### 7.3 写入:逐条事务 vs 批量追加
-
-**MySQL**:逐条 `INSERT`,每条都是一个事务,有 redo log、undo log、MVCC 保证强一致性。写一条就能立刻查到,代价是单条写入的固定开销较高,但胜在**实时、一致、可频繁单条写**。
-
-**ClickHouse**:写入的本质是「追加生成一个新的 Part」,后台再异步合并。它对**批量**写入非常友好——一次写几万、几十万行都很快;但对**逐条**写入极其不友好——每条都生成一个小 Part,合并跟不上,最终表现为查询变慢、磁盘碎片化。
-
-```text
-MySQL 的理想姿势:
-  收到一条订单 → 立刻 INSERT → 立刻可查            ✓ 推荐
-
-ClickHouse 的理想姿势:
-  攒够一批(几千~几万条) → 一次 INSERT            ✓ 推荐
-  收到一条事件 → 立刻 INSERT → 再收到一条 → INSERT ✗ 反模式,会产生大量小 Part
-```
-
-> 这就是为什么 ClickHouse 的数据通常通过 Kafka / Flink / 应用攒批写入,而不是业务代码直接逐条写。具体接入方式见《ClickHouse 进阶实战》第 1 章。
-
-### 7.4 更新与删除:单行更新 vs Mutation 重写 ⭐
-
-**这是 ClickHouse 和 MySQL 最大的差异,也是新手最容易踩坑的地方。**
-
-**MySQL**:`UPDATE` / `DELETE` 是日常操作,按主键定位一行后原地修改,代价很低,可以频繁执行。
-
-```sql
--- MySQL:轻量,毫秒级
-UPDATE store_events SET store_id = 'store-hz-002' WHERE id = 100001;
-```
-
-**ClickHouse**:列式存储的数据是按 Part 批量压缩保存的,**没有「原地修改一行」的能力**。`ALTER TABLE ... UPDATE / DELETE`(称为 **Mutation**)的本质是:把命中的整个 Part 重新读出来、改完、再写回去。
-
-```sql
--- ClickHouse:Mutation,可能重写整个 Part,代价极高
-ALTER TABLE store_events UPDATE store_id = 'store-hz-002' WHERE event_id = '...';
-```
-
-一条 SQL 看起来差不多,但底层工作量天差地别:MySQL 改的是「一行」,ClickHouse 重写的是「一个 Part(几万到上百万行)」。在大表上频繁 Mutation 会把 IO 和合并队列打满,严重拖慢整个实例。
-
-**正确姿势**:不要在 ClickHouse 上做频繁更新,而是用「**追加写 + 去重**」模拟更新:
-
-- 数据有变更时,写一条新版本记录;
-- 用 `ReplacingMergeTree`(见第 5.4 节)在后台合并时保留最新版本;
-- 查询时用 `FINAL` 或在预聚合层处理最终口径。
-
-> 记住一个原则:**ClickHouse 适合「写一次、读多次」的追加型数据,不适合「经常改」的数据。** 订单状态演进、库存这类会反复变更的数据,主库仍应是 MySQL,ClickHouse 只接收同步过来的快照。
-
-### 7.5 适用场景对比表
-
-| 对比项 | MySQL | ClickHouse |
-| --- | --- | --- |
-| 存储方式 | 行式存储 | 列式存储 |
-| 索引类型 | B+树,精确点查极快 | 稀疏索引,范围聚合极快 |
-| 典型操作 | 单条增删改查、事务 | 多维聚合、分组、TopN、漏斗 |
-| 事务能力 | 强 ACID,多表事务 | 不以事务为目标 |
-| 更新 / 删除 | 原地修改,轻量 | Mutation,重写 Part,代价高 |
-| 点查(按主键查一条) | 强项 | 弱项 |
-| 大表 Join | 强项,优化器成熟 | 弱项,建议宽表 / 字典规避 |
-| 高频小批量写入 | 适合 | 不适合,要攒批 |
-| 压缩率 | 一般 | 高(同列数据同类型) |
-| 适合数据规模 | 千万级单表 | 亿~万亿级 |
-| 典型场景 | 订单、库存、账户、配置 | 日志、埋点、指标、画像、报表 |
-| SQL 兼容 | 标准 SQL | 高度兼容标准 SQL,但有自有函数 |
-
-### 7.6 ClickHouse 的优势与劣势
+### 7.2 ClickHouse 的优势与劣势
 
 **优势:**
 
@@ -1049,25 +968,25 @@ ALTER TABLE store_events UPDATE store_id = 'store-hz-002' WHERE event_id = '...'
 
 业务库还是 MySQL,分析库交给 ClickHouse,两者各司其职,这才是正确的用法。
 
-### 7.7 实测:1000 万行数据下的性能对比
+### 7.3 实测:1000 万行数据下的性能对比
 
 概念讲了这么多,到底差多少?下面用一组**真实压测**来回答。两端用**完全相同的一批 1000 万行数据**,MySQL 建了 4 个合理的复合索引,均预热后取稳定耗时。
 
 #### 测试环境与数据
 
-| 项 | ClickHouse | MySQL |
-| -- | ---------- | ----- |
-| 版本 | 26.7.1(MergeTree) | 5.7.44(InnoDB) |
-| 数据量 | 10,000,000 行 `bench_store_events` | 同左(从 ClickHouse 导出的同一批数据) |
-| MySQL 索引 | — | `idx_tenant_date`、`idx_tenant_store_date`、`idx_product`、`idx_city` |
-| 数据分布 | 5 租户 / 500 门店 / 8 城市 / 7 种事件,跨 30 天 | 同左 |
+| 项         | ClickHouse                                     | MySQL                                                        |
+| ---------- | ---------------------------------------------- | ------------------------------------------------------------ |
+| 版本       | 26.7.1(MergeTree)                              | 5.7.44(InnoDB)                                               |
+| 数据量     | 10,000,000 行 `bench_store_events`             | 同左(从 ClickHouse 导出的同一批数据)                         |
+| MySQL 索引 | —                                              | `idx_tenant_date`、`idx_tenant_store_date`、`idx_product`、`idx_city` |
+| 数据分布   | 5 租户 / 500 门店 / 8 城市 / 7 种事件,跨 30 天 | 同左                                                         |
 
 #### 写入与存储对比
 
-| 项 | ClickHouse | MySQL | 差距 |
-| -- | ---------- | ----- | ---- |
-| 写入 1000 万行耗时 | **10 秒**(批量 INSERT) | **342 秒**(LOAD DATA 批量导入) | ≈ 34 倍 |
-| 磁盘占用 | **477 MiB** | **2818 MB(≈2.8 GB)** | ≈ 5.9 倍 |
+| 项                 | ClickHouse             | MySQL                          | 差距     |
+| ------------------ | ---------------------- | ------------------------------ | -------- |
+| 写入 1000 万行耗时 | **10 秒**(批量 INSERT) | **342 秒**(LOAD DATA 批量导入) | ≈ 34 倍  |
+| 磁盘占用           | **477 MiB**            | **2818 MB(≈2.8 GB)**           | ≈ 5.9 倍 |
 
 > 写入端 ClickHouse 的批量追加远快于 MySQL;列存的高压缩比让同样数据只占 MySQL 的约 1/6 空间——**这部分差距是结构性的,跟配置无关。**
 
@@ -1113,22 +1032,6 @@ ALTER TABLE store_events UPDATE store_id = 'store-hz-002' WHERE event_id = '...'
 
 > ⚠️ **同一个 MySQL、同一份数据、同样的 SQL,只是 buffer pool 大小不同,Q1 就从 520 ms 涨到 52 秒。** 这个对比本身比「谁更快」更值得记住。
 
-
-
-#### 怎么解读这两组数据
-
-**1. 内存充足时(场景 A),ClickHouse 对 MySQL 是 22-30 倍优势(Q1-Q3)。** 这部分差距来自三个叠加效应:
-
-- **列裁剪**:MySQL 聚合时要回表把整行(含 `properties`、`device_id` 等用不到的大字段)读出来;ClickHouse 只读 `tenant_id`、`event_date`、`event_name` 这几列,实际扫描的数据量少一个数量级;
-- **向量化执行**:ClickHouse 的 `countIf` 在一批数据(默认 8192 行)上批量计算,而不是 MySQL 那样逐行判断;
-- **稀疏索引 + 并行**:按排序键跳过其他租户、其他日期的数据块,多个 CPU 核心并行扫描不同 Part。
-
-**2. Q4 拉开 145 倍差距,核心是「去重算法」。** Q4 要对 230 万行做 `COUNT(DISTINCT member_id)`,MySQL 在内存里建临时表精确去重,CPU 密集,要 15.9 秒;ClickHouse 用 `uniqCombined64`(HyperLogLog 近似算法,误差约 1%)只扫 `member_id` 一列就估算出结果,只要 110 ms。**如果业务能接受近似 UV,这个差距是算法层面的。**
-
-**3. ClickHouse 几乎不受内存配置影响。** 两种场景下它的耗时几乎一样(17-110 ms),因为列存只读需要的几列(几百 MB 而非 2.8 GB),稀疏索引跳过无关数据块——**它天生就不需要把整张表塞进内存。**
-
-**4. MySQL 的耗时高度依赖 buffer pool 能否装下热数据。** 场景 A 能装下时 Q1-Q3 是 500-660 ms;一旦装不下(场景 B),就要频繁读磁盘,直接退化到几十秒。**这是行式存储做聚合的固有特性:要扫大量行,数据不在内存里就得现读磁盘。**
-
 #### 结论:为什么生产场景该选 ClickHouse
 
 把两组数据放一起看,答案就清楚了:
@@ -1139,166 +1042,13 @@ ALTER TABLE store_events UPDATE store_id = 'store-hz-002' WHERE event_id = '...'
 
 > ⚠️ 注意:以上对比只针对**分析型聚合查询**。按主键查一条订单、强事务写入更新,MySQL 依然是更合适的选择——这正是第 7.5 节场景对比表要表达的意思。
 
----
 
-## 8. Spring Boot 集成 ClickHouse
-
-### 8.1 引入依赖
-
-Maven 中添加 ClickHouse JDBC 驱动:
-
-```xml
-<dependency>
-    <groupId>com.clickhouse</groupId>
-    <artifactId>clickhouse-jdbc</artifactId>
-    <version>${clickhouse-jdbc.version}</version>
-</dependency>
-```
-
-具体版本请以 Maven Central 和项目兼容性为准。生产项目建议锁定并测试驱动版本,不要长期使用浮动版本。
-
-### 8.2 配置数据源
-
-多数据源场景下,`spring.datasource.clickhouse` 不会被 Spring Boot 自动注册成 `clickHouseDataSource` Bean;需要显式绑定配置并创建数据源。以下示例使用 Hikari:
-
-`application.yml`:
-
-```yaml
-spring:
-  datasource:
-    clickhouse:
-      jdbc-url: jdbc:clickhouse:http://127.0.0.1:8123/analytics
-      username: app_user
-      password: ${CLICKHOUSE_PASSWORD}
-      driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 5000
-```
-
-```java
-@Configuration
-public class ClickHouseDataSourceConfig {
-
-    @Bean(name = "clickHouseDataSource")
-    @ConfigurationProperties("spring.datasource.clickhouse")
-    public DataSource clickHouseDataSource() {
-        return new HikariDataSource();
-    }
-}
-```
-
-> `HikariDataSource` 使用 `jdbc-url` 属性;若改用 `DataSourceProperties` 绑定方式,则应使用 `url` 并在配置类中调用 `initializeDataSourceBuilder()`。两种方式任选其一,避免混用。
-
-如果项目同时连接 MySQL 和 ClickHouse,建议配置多数据源,明确区分:
-
-```text
-MySQL DataSource       → 业务 CRUD、事务数据
-ClickHouse DataSource  → 指标查询、报表分析、批量写入
-```
-
-### 8.3 查询示例
-
-```java
-/**
- * 无人店门店事件分析查询示例
- */
-@Repository
-public class StoreEventAnalyticsRepository {
-
-    private final DataSource clickHouseDataSource;
-
-    public StoreEventAnalyticsRepository(
-            @Qualifier("clickHouseDataSource") DataSource clickHouseDataSource) {
-        this.clickHouseDataSource = clickHouseDataSource;
-    }
-
-    public List<DailyEntryUv> queryDailyEntryUv(
-            String tenantId, LocalDate startDate, LocalDate endDate) throws SQLException {
-
-        String sql = """
-                SELECT
-                    event_date,
-                    uniqCombined64If(member_id, event_name = 'entry_detected') AS entry_uv
-                FROM store_events
-                WHERE tenant_id = ?
-                  AND event_date >= ?
-                  AND event_date < ?
-                GROUP BY event_date
-                ORDER BY event_date
-                """;
-
-        List<DailyEntryUv> result = new ArrayList<>();
-        try (Connection connection = clickHouseDataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, tenantId);
-            statement.setObject(2, startDate);
-            statement.setObject(3, endDate);
-
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    result.add(new DailyEntryUv(
-                            rs.getObject("event_date", LocalDate.class),
-                            rs.getLong("entry_uv")
-                    ));
-                }
-            }
-        }
-        return result;
-    }
-
-    public record DailyEntryUv(LocalDate eventDate, long entryUv) {}
-}
-```
-
-### 8.4 批量写入示例
-
-```java
-public void batchInsert(List<StoreEvent> events) throws SQLException {
-    String sql = """
-            INSERT INTO store_events
-            (event_id, tenant_id, store_id, member_id, device_id, city, event_name,
-             order_id, product_id, page_code, event_time, properties)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
-
-    try (Connection connection = clickHouseDataSource.getConnection();
-         PreparedStatement statement = connection.prepareStatement(sql)) {
-
-        for (StoreEvent event : events) {
-            statement.setObject(1, event.eventId());
-            statement.setString(2, event.tenantId());
-            statement.setString(3, event.storeId());
-            statement.setObject(4, event.memberId());
-            statement.setString(5, event.deviceId());
-            statement.setString(6, event.city());
-            statement.setString(7, event.eventName());
-            statement.setObject(8, event.orderId());
-            statement.setObject(9, event.productId());
-            statement.setString(10, event.pageCode());
-            statement.setObject(11, event.eventTime());
-            statement.setString(12, event.properties());
-            statement.addBatch();
-        }
-
-        statement.executeBatch();
-    }
-}
-```
-
-建议:
-
-- 优先通过 Kafka、Flink、Logstash、Vector 等通道批量导入;
-- 如果业务服务直接写入,按一定条数或时间窗口**攒批**后写入;
-- 大批量数据可使用 `JSONEachRow`、CSV、Parquet 等格式写入,提高吞吐;
-- ClickHouse 不适合把每一条设备、门禁或交易事件都同步写入。
 
 ---
 
-## 9. 常见误区
+## 8. 常见误区
 
-### 9.1 把 ClickHouse 当 MySQL 使用
+### 8.1 把 ClickHouse 当 MySQL 使用
 
 错误方式:
 
@@ -1316,7 +1066,7 @@ ClickHouse 支持 Mutation,但底层往往需要重写相关数据 Part,成本�
 - 需要更正的数据可写入新版本,配合 `ReplacingMergeTree` 或下游聚合处理;
 - 大规模历史修正应规划批处理窗口,避免业务高峰执行。
 
-### 9.2 每条消息执行一次 INSERT
+### 8.2 每条消息执行一次 INSERT
 
 错误方式:
 
@@ -1330,7 +1080,7 @@ ClickHouse 支持 Mutation,但底层往往需要重写相关数据 Part,成本�
 Kafka 批量消费 / 应用内缓存攒批 → 每批数千~数万条写入 → 后台高效合并
 ```
 
-### 9.3 不带时间条件查询大表
+### 8.3 不带时间条件查询大表
 
 错误方式:
 
@@ -1350,7 +1100,7 @@ WHERE tenant_id = 'tenant-a'
   AND event_name = 'entry_detected';
 ```
 
-### 9.4 过度分区
+### 8.4 过度分区
 
 错误方式:
 
@@ -1362,7 +1112,7 @@ PARTITION BY store_id
 
 一般按时间做分区即可,租户、门店、设备、商品等查询维度通过 `ORDER BY`、预聚合或跳数索引解决。
 
-### 9.5 盲目使用 FINAL
+### 8.5 盲目使用 FINAL
 
 `FINAL` 能在查询时强制合并数据,对去重表有用,但代价不低。
 
@@ -1370,19 +1120,19 @@ PARTITION BY store_id
 
 ---
 
-## 10. 选型对比与优劣势
+## 9. 选型对比与优劣势
 
-### 10.1 ClickHouse、MySQL、Elasticsearch 如何选择
+### 9.1 ClickHouse、MySQL、Elasticsearch 如何选择
 
-| 场景 | 推荐组件 | 原因 |
-| --- | --- | --- |
-| 订单创建、支付确认、库存扣减、门店配置 | MySQL / PostgreSQL | 强事务、行级更新、主键查询能力强。 |
-| 门店事件、设备日志、经营与转化分析 | ClickHouse | 可按租户、门店、设备、商品和时间快速做多维聚合。 |
-| 商品标题、文章内容搜索 | Elasticsearch / OpenSearch | 全文检索、相关性评分、分词能力强。 |
-| 全文检索结果的统计分析 | Elasticsearch + ClickHouse | ES 负责搜索,ClickHouse 承担复杂离线/实时统计。 |
-| 秒级实时指标大盘 | Kafka / Flink + ClickHouse | 流式接入、实时聚合、OLAP 查询。 |
+| 场景                                   | 推荐组件                   | 原因                                             |
+| -------------------------------------- | -------------------------- | ------------------------------------------------ |
+| 订单创建、支付确认、库存扣减、门店配置 | MySQL / PostgreSQL         | 强事务、行级更新、主键查询能力强。               |
+| 门店事件、设备日志、经营与转化分析     | ClickHouse                 | 可按租户、门店、设备、商品和时间快速做多维聚合。 |
+| 商品标题、文章内容搜索                 | Elasticsearch / OpenSearch | 全文检索、相关性评分、分词能力强。               |
+| 全文检索结果的统计分析                 | Elasticsearch + ClickHouse | ES 负责搜索,ClickHouse 承担复杂离线/实时统计。   |
+| 秒级实时指标大盘                       | Kafka / Flink + ClickHouse | 流式接入、实时聚合、OLAP 查询。                  |
 
-### 10.2 ClickHouse 的优势
+### 9.2 ClickHouse 的优势
 
 1. **聚合查询极快**:亿级明细的多维聚合、分组、TopN 通常在百毫秒到秒级返回,这是它最核心的价值。
 2. **压缩率高**:列存 + 同类型数据,存储占用通常只有行式数据库的 1/5 ~ 1/10。
@@ -1390,7 +1140,7 @@ PARTITION BY store_id
 4. **实时写入、近实时可查**:数据写入后几秒内即可查询。
 5. **并行计算**:一条 SQL 自动利用多核,无需手动调优并发。
 
-### 10.3 ClickHouse 的劣势(选型时必须正视)
+### 9.3 ClickHouse 的劣势(选型时必须正视)
 
 > 新手最容易高估 ClickHouse 的能力,以为「快」就能替代一切。下面这些短板决定了它**只能做分析库,不能做业务主库**。
 
@@ -1401,7 +1151,7 @@ PARTITION BY store_id
 5. **不适合频繁小批量写入**:逐条 INSERT 会产生大量小 Part,拖垮后台合并,影响查询。
 6. **生态不如 MySQL 成熟**:运维工具、ORM、人才储备都不如 MySQL 普及,团队需要额外学习成本。
 
-### 10.4 一句话选型原则
+### 9.4 一句话选型原则
 
 ```text
 要做事务、要频繁改数据、要点查一条       →  MySQL
@@ -1423,7 +1173,7 @@ Elasticsearch:商品、工单等全文检索
 
 ---
 
-## 11. 总结
+## 10. 总结
 
 ClickHouse 的价值不只是「SQL 跑得快」,更重要的是它改变了处理海量分析数据的方式:
 
@@ -1435,7 +1185,7 @@ ClickHouse 的价值不只是「SQL 跑得快」,更重要的是它改变了处�
 
 对无人值守商店 SaaS 而言,ClickHouse 的价值不只是"SQL 跑得快":它让团队能更快区分客流、商品、设备和支付问题,定位异常门店,并持续验证修复是否真正改善了经营结果。
 
-> 进阶内容(Kafka 实时接入、物化视图预聚合、性能优化、集群高可用、运维监控)见《ClickHouse 进阶实战》。
+> 进阶内容(Kafka 实时接入、物化视图预聚合、性能优化、集群高可用、运维监控)见《[ClickHouse 进阶实战](./ClickHouse进阶实战.md)》。
 
 ---
 
@@ -1446,4 +1196,4 @@ ClickHouse 的价值不只是「SQL 跑得快」,更重要的是它改变了处�
 - [ClickHouse MergeTree 引擎](https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree)
 - [ClickHouse Materialized View](https://clickhouse.com/docs/materialized-view)
 - [ClickHouse Kafka 表引擎](https://clickhouse.com/docs/engines/table-engines/integrations/kafka)
-- 进阶篇:《ClickHouse 进阶实战》
+- 进阶篇:《[ClickHouse 进阶实战](./ClickHouse进阶实战.md)》
