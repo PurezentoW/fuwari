@@ -250,7 +250,7 @@ WHERE length(_error) > 0;      -- 只要包含错误信息，就自动分流
 
 配置完成后，正常消息照常进入 `store_events`，坏消息自动进入 `ods_kafka_dead_letter`，互不影响。
 
-<video src="https://cdn.wcxian.cc/img/20260825163012320.mp4"></video>
+<iframe width="100%" height="468" src="https://cdn.wcxian.cc/img/20260825163012320.mp4" title="YouTube video player" frameborder="0" allowfullscreen></iframe>
 
 物化视图适合字段映射、默认值和简单 JSON 提取，不适合复杂 Join 或完整 ETL。流量突增时，应先看 Partition、写入批次、Part、Merge 和磁盘 IO，再决定扩消费者、扩分片还是前移清洗。
 
